@@ -1,17 +1,16 @@
 
- var http = require('http')
+ 'use strict';
+
+var os = require('os');
+var nodeStatic = require('node-static');
+var http = require('http');
+var socketIO = require('socket.io');
+
  var port = process.env.PORT || 1337;
  var app = http.createServer(function(req, res) {
    res.writeHead(200, { 'Content-Type': 'text/plain' });
    res.end('Hello World\n');
  }).listen(port);
-
-// 'use strict';
-
-// var os = require('os');
-// var nodeStatic = require('node-static');
-// var http = require('http');
-// var socketIO = require('socket.io');
 
 // var fileServer = new (nodeStatic.Server)();
 // var app = http.createServer(function (req, res) {
