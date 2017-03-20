@@ -8,7 +8,7 @@ var socketIO = require('socket.io');
 
  var port = process.env.PORT || 12345;
  var app = http.createServer(function(req, res) {
-   res.writeHead(200, { 'Content-Type': 'text/plain' });
+   res.writeHead(200, { 'Content-Type': 'text/plain', 'Access-Control-Allow-Origin' : '*' });
    res.end('Signaling server\n');
  }).listen(port);
 
