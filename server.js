@@ -6,7 +6,7 @@ var nodeStatic = require('node-static');
 var http = require('http');
 var socketIO = require('socket.io');
 
- var port = process.env.PORT || 80;
+ var port = process.env.PORT || 12345;
  var app = http.createServer(function(req, res) {
    res.writeHead(200, { 'Content-Type': 'text/plain' });
    res.end('Signaling server\n');
@@ -20,7 +20,9 @@ var appInsightsClient = appInsights.getClient();
 
 
 
+
 var io = socketIO.listen(app);
+io.set('origins', '*:*');
 io.sockets.on('connection', function (socket) {
 
   // convenience function to log server messages on the client
