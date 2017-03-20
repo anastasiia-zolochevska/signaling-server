@@ -12,12 +12,13 @@ var socketIO = require('socket.io');
    res.end('Signaling server\n');
  }).listen(port);
 
-// var fileServer = new (nodeStatic.Server)();
-// var app = http.createServer(function (req, res) {
-//  // fileServer.serve(req, res);
-//   res.writeHead(200, { 'Content-Type': 'text/plain' });
-//   res.end('Hello World\n');
-// }).listen(8080);
+
+var appInsightsInstrumentationKey = "66eb311b-f091-41dc-8ddb-d8b1647091d3"
+var appInsights = require("applicationinsights");
+appInsights.setup(appInsightsInstrumentationKey).start();
+var appInsightsClient = appInsights.getClient();
+
+
 
 var io = socketIO.listen(app);
 io.sockets.on('connection', function (socket) {
@@ -28,6 +29,8 @@ io.sockets.on('connection', function (socket) {
     array.push.apply(array, arguments);
     console.log(array);
     socket.emit('log', array);
+
+    appInsightsClient.trackTrace(array.join(" "));
   }
 
   socket.on('message', function (message) {
