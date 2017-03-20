@@ -6,7 +6,7 @@ var nodeStatic = require('node-static');
 var http = require('http');
 var socketIO = require('socket.io');
 
- var port = process.env.PORT || 12345;
+ var port = process.env.PORT || 80;
  var app = http.createServer(function(req, res) {
    res.writeHead(200, { 'Content-Type': 'text/plain', 'Access-Control-Allow-Origin' : '*' });
    res.end('Signaling server\n');
@@ -15,7 +15,7 @@ var socketIO = require('socket.io');
 
 var appInsightsInstrumentationKey = "66eb311b-f091-41dc-8ddb-d8b1647091d3"
 var appInsights = require("applicationinsights");
-appInsights.setup(appInsightsInstrumentationKey).start();
+appInsights.setup(appInsightsInstrumentationKey).setAutoCollectExceptions(true).start();
 var appInsightsClient = appInsights.getClient();
 
 
@@ -27,12 +27,11 @@ io.sockets.on('connection', function (socket) {
 
   // convenience function to log server messages on the client
   function log() {
+    appInsightsClient.trackTrace(arguments.join(" "));
     var array = ['Message from server:'];
     array.push.apply(array, arguments);
     console.log(array);
     socket.emit('log', array);
-
-    appInsightsClient.trackTrace(array.join(" "));
   }
 
   socket.on('message', function (message) {
