@@ -6,7 +6,7 @@ var nodeStatic = require('node-static');
 var http = require('http');
 var socketIO = require('socket.io');
 
- var port = process.env.PORT || 1234;
+ var port = process.env.PORT || 80;
  var app = http.createServer(function(req, res) {
    res.writeHead(200, { 'Content-Type': 'text/plain'});
    res.end('Signaling server\n');
