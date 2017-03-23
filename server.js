@@ -1,16 +1,16 @@
 
- 'use strict';
+'use strict';
 
 var os = require('os');
 var nodeStatic = require('node-static');
 var http = require('http');
 var socketIO = require('socket.io');
 
- var port = process.env.PORT || 80;
- var app = http.createServer(function(req, res) {
-   res.writeHead(200, { 'Content-Type': 'text/plain'});
-   res.end('Signaling server\n');
- }).listen(port);
+var port = process.env.PORT || 1234;
+var app = http.createServer(function (req, res) {
+  res.writeHead(200, { 'Content-Type': 'text/plain' });
+  res.end('Signaling server\n');
+}).listen(port);
 
 
 var appInsightsInstrumentationKey = "66eb311b-f091-41dc-8ddb-d8b1647091d3"
@@ -33,45 +33,17 @@ io.sockets.on('connection', function (socket) {
     appInsightsClient.trackTrace(array.join(" "));
   }
 
-  socket.on('message', function (message) {
+  socket.on('message', function (message, room) {
     log('Client said: ', message);
-    // for a real app, would be room-only (not broadcast)
-    socket.broadcast.emit('message', message);
+    io.to(room).emit('message', message);
   });
 
-  socket.on('create or join', function (room) {
-    log('Received request to create or join room ' + room);
-
-    var numClients = io.sockets.sockets.length;
-    log('Room ' + room + ' now has ' + numClients + ' client(s)');
-
-    if (numClients === 1) {
-      socket.join(room);
-      log('Client ID ' + socket.id + ' created room ' + room);
-      socket.emit('created', room, socket.id);
-
-    } else {
-      log('Client ID ' + socket.id + ' joined room ' + room);
-      io.sockets.in(room).emit('join', room);
-      socket.join(room);
-      socket.emit('joined', room, socket.id);
-      io.sockets.in(room).emit('ready');
-    }
+  socket.on('join', function (room) {
+    socket.join(room);
   });
 
-  socket.on('ipaddr', function () {
-    var ifaces = os.networkInterfaces();
-    for (var dev in ifaces) {
-      ifaces[dev].forEach(function (details) {
-        if (details.family === 'IPv4' && details.address !== '127.0.0.1') {
-          socket.emit('ipaddr', details.address);
-        }
-      });
-    }
-  });
-
-  socket.on('bye', function () {
-    console.log('received bye');
+  socket.on('bye', function (room) {
+    socket.leave(room)
   });
 
 });
