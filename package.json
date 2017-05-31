@@ -6,6 +6,7 @@
   },
   "description": "signaling-server",
   "dependencies": {
+    "applicationinsights": "^0.20.1",
     "body-parser": "^1.17.2",
     "express": "^4.15.3"
   }

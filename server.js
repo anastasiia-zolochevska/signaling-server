@@ -1,10 +1,11 @@
 
 var express = require('express')
 var bodyParser = require('body-parser')
+appInsights = require("applicationinsights");
+var client = appInsights.getClient();
 
 var clientCounter = 1;
 var clientToId = {};
-var generalRoom = "GENERAL";
 var peers = {};
 
 var port = process.env.PORT || 3000;
@@ -12,21 +13,18 @@ var port = process.env.PORT || 3000;
 
 var app = express();
 
-// parse application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: false }))
-
-// parse application/json
 app.use(bodyParser.text())
 
 
 app.get('/sign_in', function (req, res) {
     var client = {};
-    console.log(req.url);
+    log(req.url);
     var newPeer = {}
     newPeer.id = clientCounter++;
     newPeer.peerType = 'client';
     newPeer.messages = [];
-    newPeer.name = req.url.substring(req.url.indexOf("?") + 1, req.url.length - 1);
+    newPeer.name = req.url.substring(req.url.indexOf("?") + 1, req.url.length);
     if (newPeer.name.indexOf("renderingclient_") != -1) {
         newPeer.peerType = 'client';
     }
@@ -43,9 +41,7 @@ app.get('/sign_in', function (req, res) {
 
 
 app.post('/message', function (req, res) {
-    console.log(req.url);
-    console.log(req.body);
-    console.log(req.headers['content-length']);
+    log(req.url);
     var fromId = req.query.peer_id;
     var toId = req.query.to;
     var payload = req.body;
@@ -55,7 +51,7 @@ app.post('/message', function (req, res) {
         res.status(400).send();
     }
     if (contentLength <= payload.length) {
-        peers[toId].roomPeer = peers[fromId]
+        peers[toId].roomPeer = peers[fromId];
         peers[fromId].roomPeer = peers[toId];
         sendMessageToPeer(peers[toId], payload, fromId);
         res.set('Pragma', fromId);
@@ -65,7 +61,7 @@ app.post('/message', function (req, res) {
 })
 
 app.get('/sign_out', function (req, res) {
-    console.log(req.url);
+    log(req.url);
     var peerId = req.query.peer_id;
     var peer = peers[peerId]
     delete peers[peerId]
@@ -80,7 +76,7 @@ app.get('/sign_out', function (req, res) {
 
 
 app.get('/wait', function (req, res) {
-    console.log(req.url);
+    log(req.url);
     var peerId = req.query.peer_id;
     var socket = {};
     socket.waitPeer = peers[peerId];
@@ -141,6 +137,7 @@ function isPeerCandidate(peer, otherPeer) {
         otherPeer.peerType != peer.peerType) // filter out peers of same type
 }
 
+client.trackTrace("Signaling server running at port " + port);
 
 app.listen(port)
 
