@@ -99,8 +99,8 @@ app.get('/wait', function (req, res) {
             connectionsToClean.forEach(function (peerId) {
                 signOut(peerId);
                 log("Cleaning connections "+peerId)
-                connectionsToClean.splice(connectionsToClean.indexOf(peerId), 1)
-            })
+            });
+            connectionsToClean=[];
         }, 3000);
     });
 
