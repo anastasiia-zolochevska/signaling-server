@@ -70,13 +70,13 @@ app.get('/sign_out', function (req, res) {
 })
 
 
-var connectionsToClean = [];
+var connectionsToClean = new Set();
 
 app.get('/wait', function (req, res) {
     log(req.url);
     var peerId = req.query.peer_id;
-    if (connectionsToClean.indexOf(peerId)!=-1) {
-        connectionsToClean.splice(connectionsToClean.indexOf(peerId), 1)
+    if (connectionsToClean.has(peerId)) {
+        connectionsToClean.remove(peerId)
     }
     var socket = {};
     socket.waitPeer = peers[peerId];
@@ -84,7 +84,7 @@ app.get('/wait', function (req, res) {
     peers[peerId].waitSocket = socket;
 
     req.connection.on('close', function () {
-        log("Wait socket close handler "+peerId);
+        log("Wait socket close handler " + peerId);
         var clearConnection = true;
         for (var key in peers) {
             if (!(peers[key]).waitSocket) {
@@ -92,15 +92,15 @@ app.get('/wait', function (req, res) {
             }
         }
         if (clearConnection) {
-            log("CRASH "+peerId);
-            connectionsToClean.push(peerId);
+            log("CRASH " + peerId);
+            connectionsToClean.add(peerId);
         }
         setTimeout(function () {
             connectionsToClean.forEach(function (peerId) {
                 signOut(peerId);
-                log("Cleaning connections "+peerId)
+                log("Cleaning connections " + peerId)
             });
-            connectionsToClean=[];
+            connectionsToClean = new Set();
         }, 3000);
     });
 
