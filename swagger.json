@@ -1,0 +1,139 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "description": "The restful signaling server for 3dtoolkit",
+    "version": "0.1.0",
+    "title": "3DToolkit Signaling Server"
+  },
+  "host": "3dtoolkit-signaling-server.azurewebsites.net",
+  "basePath": "/",
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "paths": {
+    "/sign_in": {
+      "get": {
+        "summary": "Sign a client into the service",
+        "produces": [
+          "text/plain"
+        ],
+        "parameters": [
+          {
+            "name": "",
+            "required": true,
+            "in": "query",
+            "description": "the client identifier, should start with either renderingserver_ or renderingclient_",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful login",
+            "schema": {
+              "type": "string",
+              "example": "name,id,1",
+              "items": {
+                "$ref": "#/definitions/ConnectedClient"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/message": {
+      "post": {
+        "summary": "Sends some arbitrary data to another client",
+        "parameters": [
+          {
+            "name": "peer_id",
+            "required": true,
+            "in": "query",
+            "description": "the client that is sending the message",
+            "type": "number"
+          },
+          {
+            "name": "to",
+            "required": true,
+            "in": "query",
+            "description": "the client we want to send the data to",
+            "type": "number"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "data sent"
+          }
+        }
+      }
+    },
+    "/wait": {
+      "get": {
+        "summary": "Long polling endpoint for client connection status changes",
+        "description": "A client should use a long timeout for this endpoint, as the server will hold the connection open until there is some data to transmit. If a timeout occurs, the client should reissue the request.",
+        "produces": [
+          "text/plain"
+        ],
+        "parameters": [
+          {
+            "name": "peer_id",
+            "required": true,
+            "in": "query",
+            "description": "the client that is sending the message",
+            "type": "number"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "data sent",
+            "schema": {
+              "type": "string",
+              "example": "name,id,1",
+              "items": {
+                "$ref": "#/definitions/ConnectedClient"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sign_out": {
+      "get": {
+        "summary": "Sign a client out of the service",
+        "parameters": [
+          {
+            "name": "peer_id",
+            "required": true,
+            "in": "query",
+            "description": "the client that is sending the message",
+            "type": "number"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful logout"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "ConnectedClient": {
+      "type": "object",
+      "format": "csv",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "id": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "constant": {
+          "type": "integer",
+          "format": "1"
+        }
+      }
+    }
+  }
+}
