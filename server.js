@@ -84,7 +84,7 @@ app.get('/wait', function (req, res) {
     peers[peerId].waitSocket = socket;
 
     req.connection.on('close', function () {
-
+        log("Wait socket close handler "+peerId);
         var clearConnection = true;
         for (var key in peers) {
             if (!(peers[key]).waitSocket) {
