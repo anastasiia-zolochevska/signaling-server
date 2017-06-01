@@ -55,7 +55,7 @@ app.post('/message', function (req, res) {
         peers[fromId].roomPeer = peers[toId];
         sendMessageToPeer(peers[toId], payload, fromId);
         res.set('Pragma', fromId);
-        res.send();
+        res.send("Ok");
     }
 
 })
@@ -63,27 +63,60 @@ app.post('/message', function (req, res) {
 app.get('/sign_out', function (req, res) {
     log(req.url);
     var peerId = req.query.peer_id;
-    var peer = peers[peerId]
-    delete peers[peerId]
+    signOut(peerId);
 
-    if (peer.roomPeer) {
-        peer.roomPeer.roomPeer = null;
-        peer.roomPeer = null;
-    }
     res.set('Pragma', peerId);
-    res.send();
+    res.send("Ok");
 })
 
+
+var connectionsToClean = [];
 
 app.get('/wait', function (req, res) {
     log(req.url);
     var peerId = req.query.peer_id;
+    if (connectionsToClean.indexOf(peerId)!=-1) {
+        connectionsToClean.splice(connectionsToClean.indexOf(peerId), 1)
+    }
     var socket = {};
     socket.waitPeer = peers[peerId];
     socket.res = res;
     peers[peerId].waitSocket = socket;
+
+    req.connection.on('close', function () {
+
+        var clearConnection = true;
+        for (var key in peers) {
+            if (!(peers[key]).waitSocket) {
+                clearConnection = false;
+            }
+        }
+        if (clearConnection) {
+            console.log("CRASH");
+            connectionsToClean.push(peerId);
+        }
+        setTimeout(function () {
+            connectionsToClean.forEach(function (peerId) {
+                signOut(peerId);
+                connectionsToClean.splice(connectionsToClean.indexOf(peerId), 1)
+            })
+        }, 2000);
+    });
+
     sendMessageToPeer(peers[peerId], null, null);
 })
+
+function signOut(peerId) {
+    var peer = peers[peerId];
+
+    if (peer && peer.roomPeer) {
+        peer.roomPeer.waitSocket.res.set('Pragma', peerId);
+        peer.roomPeer.waitSocket.res.send("BYE");
+        peer.roomPeer.roomPeer = null;
+        peer.roomPeer = null;
+    }
+    delete peers[peerId];
+}
 
 
 function formatListOfPeers(peer) {
@@ -124,6 +157,7 @@ function sendMessageToPeer(peer, payload, fromId) {
         if (msg) {
             peer.waitSocket.res.set('Pragma', msg.id);
             peer.waitSocket.res.send(msg.payload);
+            console.log("Sending", msg.payload);
             peer.waitSocket.waitPeer = null;
             peer.waitSocket.tmpData = "";
             peer.waitSocket = null;
