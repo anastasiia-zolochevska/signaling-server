@@ -100,7 +100,7 @@ app.get('/wait', function (req, res) {
                 signOut(peerId);
                 connectionsToClean.splice(connectionsToClean.indexOf(peerId), 1)
             })
-        }, 2000);
+        }, 3000);
     });
 
     sendMessageToPeer(peers[peerId], null, null);
