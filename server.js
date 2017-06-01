@@ -76,7 +76,7 @@ app.get('/wait', function (req, res) {
     log(req.url);
     var peerId = req.query.peer_id;
     if (connectionsToClean.has(peerId)) {
-        connectionsToClean.remove(peerId)
+        connectionsToClean.delete(peerId)
     }
     var socket = {};
     socket.waitPeer = peers[peerId];
