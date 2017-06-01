@@ -92,12 +92,13 @@ app.get('/wait', function (req, res) {
             }
         }
         if (clearConnection) {
-            console.log("CRASH");
+            log("CRASH "+peerId);
             connectionsToClean.push(peerId);
         }
         setTimeout(function () {
             connectionsToClean.forEach(function (peerId) {
                 signOut(peerId);
+                log("Cleaning connections "+peerId)
                 connectionsToClean.splice(connectionsToClean.indexOf(peerId), 1)
             })
         }, 3000);
