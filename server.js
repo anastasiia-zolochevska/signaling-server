@@ -20,6 +20,8 @@ app.use(bodyParser.text())
 
 
 var access = fs.createWriteStream(require('path').dirname(require.main.filename)+'/api.access.log');
+log(require('path').dirname(require.main.filename));
+
 process.stdout.write = process.stderr.write = access.write.bind(access);
 
 process.on('uncaughtException', function(err) {
