@@ -8,6 +8,7 @@ var client = appInsights.getClient();
 var clientCounter = 1;
 var clientToId = {};
 var peers = {};
+var connectionsToClean = new Set();
 
 var port = process.env.PORT || 3000;
 
@@ -58,7 +59,6 @@ app.post('/message', function (req, res) {
         res.set('Pragma', fromId);
         res.send("Ok");
     }
-
 })
 
 app.get('/sign_out', function (req, res) {
@@ -70,8 +70,6 @@ app.get('/sign_out', function (req, res) {
     res.send("Ok");
 })
 
-
-var connectionsToClean = new Set();
 
 app.get('/wait', function (req, res) {
     log(req.url);
@@ -87,19 +85,19 @@ app.get('/wait', function (req, res) {
     peers[peerId].waitSocket = socket;
 
     req.connection.on('close', function () {
-        log("Wait socket close handler " + peerId);
+        log("Wait socket close handler " + peerId+ " " + peers[peerId].peerType);
 
-        connectionsToClean.add(peerId);
+        // connectionsToClean.add(peerId);
 
-        setTimeout(function () {
-            connectionsToClean.forEach(function (peerId) {
-                if (peers[peerId]) {
-                    log("About to clean connection " + peerId + " " + peers[peerId].peerType)
-                    signOut(peerId);
-                }
-            });
-            connectionsToClean = new Set();
-        }, 3000);
+        // setTimeout(function () {
+        //     connectionsToClean.forEach(function (peerId) {
+        //         if (peers[peerId]) {
+        //             log("About to clean connection " + peerId + " " + peers[peerId].peerType)
+        //             signOut(peerId);
+        //         }
+        //     });
+        //     connectionsToClean = new Set();
+        // }, 3000);
     });
 
     sendMessageToPeer(peers[peerId], null, null);
@@ -133,7 +131,7 @@ function formatListOfPeers(peer) {
 var logCounter = 0;
 function log(message) {
     console.log(logCounter++ + " " + message);
-    client.trackTrace(logCounter + message);
+    client.trackTrace(logCounter + " " + message);
 }
 
 function notifyOtherPeers(newPeer) {
