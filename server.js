@@ -2,8 +2,8 @@
 var express = require('express')
 var bodyParser = require('body-parser')
 appInsights = require("applicationinsights");
-appInsights.setup().setAutoCollectExceptions(true);
 var client = appInsights.getClient();
+const fs = require('fs');
 
 var clientCounter = 1;
 var clientToId = {};
@@ -18,6 +18,13 @@ var app = express();
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.text())
 
+
+var access = fs.createWriteStream(require('path').dirname(require.main.filename)+'/api.access.log');
+process.stdout.write = process.stderr.write = access.write.bind(access);
+
+process.on('uncaughtException', function(err) {
+  console.error((err && err.stack) ? err.stack : err);
+});
 
 app.get('/sign_in', function (req, res) {
     var client = {};
