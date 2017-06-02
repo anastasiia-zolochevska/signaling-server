@@ -2,6 +2,7 @@
 var express = require('express')
 var bodyParser = require('body-parser')
 appInsights = require("applicationinsights");
+appInsights.setup().setAutoCollectExceptions(true);
 var client = appInsights.getClient();
 
 var clientCounter = 1;
@@ -92,8 +93,10 @@ app.get('/wait', function (req, res) {
 
         setTimeout(function () {
             connectionsToClean.forEach(function (peerId) {
-                log("About to clean connection " + peerId + " " + peers[peerId].peerType)
-                signOut(peerId);
+                if (peers[peerId]) {
+                    log("About to clean connection " + peerId + " " + peers[peerId].peerType)
+                    signOut(peerId);
+                }
             });
             connectionsToClean = new Set();
         }, 3000);
@@ -127,9 +130,10 @@ function formatListOfPeers(peer) {
     return result;
 }
 
+var logCounter = 0;
 function log(message) {
-    console.log(message);
-    client.trackTrace(message);
+    console.log(logCounter++ + " " + message);
+    client.trackTrace(logCounter + message);
 }
 
 function notifyOtherPeers(newPeer) {
