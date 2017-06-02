@@ -19,8 +19,7 @@ app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.text())
 
 
-var access = fs.createWriteStream(require('path').dirname(require.main.filename)+'/api.access.log');
-log(require('path').dirname(require.main.filename));
+var access = fs.createWriteStream('D:\home\site\wwwroot\api.access.log');
 
 process.stdout.write = process.stderr.write = access.write.bind(access);
 
