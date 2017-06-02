@@ -75,7 +75,9 @@ var connectionsToClean = new Set();
 app.get('/wait', function (req, res) {
     log(req.url);
     var peerId = req.query.peer_id;
+    log("Wait request " + peerId + " " + peers[peerId].peerType);
     if (connectionsToClean.has(peerId)) {
+        log("This connection is still alive " + peerId + " " + peers[peerId].peerType)
         connectionsToClean.delete(peerId)
     }
     var socket = {};
@@ -85,20 +87,13 @@ app.get('/wait', function (req, res) {
 
     req.connection.on('close', function () {
         log("Wait socket close handler " + peerId);
-        var clearConnection = true;
-        for (var key in peers) {
-            if (!(peers[key]).waitSocket) {
-                clearConnection = false;
-            }
-        }
-        if (clearConnection) {
-            log("CRASH " + peerId);
-            connectionsToClean.add(peerId);
-        }
+
+        connectionsToClean.add(peerId);
+
         setTimeout(function () {
             connectionsToClean.forEach(function (peerId) {
+                log("About to clean connection " + peerId + " " + peers[peerId].peerType)
                 signOut(peerId);
-                log("Cleaning connections " + peerId)
             });
             connectionsToClean = new Set();
         }, 3000);
@@ -111,6 +106,7 @@ function signOut(peerId) {
     var peer = peers[peerId];
 
     if (peer && peer.roomPeer) {
+        log("Sending BYE to " + peer.roomPeer.id + " " + peers[peer.roomPeer.id].peerType)
         peer.roomPeer.waitSocket.res.set('Pragma', peerId);
         peer.roomPeer.waitSocket.res.send("BYE");
         peer.roomPeer.roomPeer = null;
