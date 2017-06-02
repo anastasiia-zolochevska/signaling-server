@@ -2,6 +2,7 @@
 var express = require('express')
 var bodyParser = require('body-parser')
 appInsights = require("applicationinsights");
+appInsights.setup().setAutoCollectExceptions(true)
 var client = appInsights.getClient();
 const fs = require('fs');
 
