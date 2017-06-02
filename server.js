@@ -24,8 +24,8 @@ var access = fs.createWriteStream('D:\home\site\wwwroot\api.access.log');
 
 process.stdout.write = process.stderr.write = access.write.bind(access);
 
-process.on('uncaughtException', function(err) {
-  console.error((err && err.stack) ? err.stack : err);
+process.on('uncaughtException', function (err) {
+    console.error((err && err.stack) ? err.stack : err);
 });
 
 app.get('/sign_in', function (req, res) {
@@ -83,33 +83,35 @@ app.get('/sign_out', function (req, res) {
 app.get('/wait', function (req, res) {
     log(req.url);
     var peerId = req.query.peer_id;
-    log("Wait request " + peerId + " " + peers[peerId].peerType);
-    if (connectionsToClean.has(peerId)) {
-        log("This connection is still alive " + peerId + " " + peers[peerId].peerType)
-        connectionsToClean.delete(peerId)
+    if (peers[peerId]) {
+        log("Wait request " + peerId + " " + peers[peerId].peerType);
+        if (connectionsToClean.has(peerId)) {
+            log("This connection is still alive " + peerId + " " + peers[peerId].peerType)
+            connectionsToClean.delete(peerId)
+        }
+        var socket = {};
+        socket.waitPeer = peers[peerId];
+        socket.res = res;
+        peers[peerId].waitSocket = socket;
+
+        req.connection.on('close', function () {
+            log("Wait socket close handler " + peerId + " " + peers[peerId].peerType);
+
+            // connectionsToClean.add(peerId);
+
+            // setTimeout(function () {
+            //     connectionsToClean.forEach(function (peerId) {
+            //         if (peers[peerId]) {
+            //             log("About to clean connection " + peerId + " " + peers[peerId].peerType)
+            //             signOut(peerId);
+            //         }
+            //     });
+            //     connectionsToClean = new Set();
+            // }, 3000);
+        });
+
+        sendMessageToPeer(peers[peerId], null, null);
     }
-    var socket = {};
-    socket.waitPeer = peers[peerId];
-    socket.res = res;
-    peers[peerId].waitSocket = socket;
-
-    req.connection.on('close', function () {
-        log("Wait socket close handler " + peerId+ " " + peers[peerId].peerType);
-
-        // connectionsToClean.add(peerId);
-
-        // setTimeout(function () {
-        //     connectionsToClean.forEach(function (peerId) {
-        //         if (peers[peerId]) {
-        //             log("About to clean connection " + peerId + " " + peers[peerId].peerType)
-        //             signOut(peerId);
-        //         }
-        //     });
-        //     connectionsToClean = new Set();
-        // }, 3000);
-    });
-
-    sendMessageToPeer(peers[peerId], null, null);
 })
 
 function signOut(peerId) {
