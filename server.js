@@ -26,7 +26,7 @@ app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.text())
 
 
-var access = fs.createWriteStream('D:\home\site\wwwroot\api.access.log'+new Date().getMilliseconds());
+var access = fs.createWriteStream('D:\home\site\wwwroot\api.access.log' + new Date().getMilliseconds());
 
 process.stdout.write = process.stderr.write = access.write.bind(access);
 
@@ -99,18 +99,25 @@ app.get('/wait', function (req, res) {
         socket.waitPeer = peers[peerId];
         socket.res = res;
         peers[peerId].waitSocket = socket;
+        log("Peers:")
+        peers.forEach(function (peerId) {
+            log(peer.id + " " + peer.peerType)
+        });
+        log("------------")
+
+        log("Setting close event handler for " + peerId + " " + peers[peerId].peerType);
 
         req.connection.on('close', function () {
             log("Wait socket connection.close handler " + peerId + " " + peers[peerId].peerType);
-        }); 
+        });
 
-         req.socket.on('close', function () {
+        req.socket.on('close', function () {
             log("Wait socket socket.close handler " + peerId + " " + peers[peerId].peerType);
-        }); 
+        });
 
         req.on('finish', function () {
             log("Wait socket req.finish handler " + peerId + " " + peers[peerId].peerType);
-        }); 
+        });
 
         req.on('close', function () {
             log("Wait socket close handler " + peerId + " " + peers[peerId].peerType);
@@ -162,8 +169,8 @@ function formatListOfPeers(peer) {
 
 var logCounter = 0;
 function log(message) {
-    console.log(logCounter++ + " " + new Date().getHours()+ ":" + new Date().getMinutes() + ":" + new Date().getSeconds() + " " + message);
-    client.trackTrace(logCounter + " " + new Date().getHours()+ ":" + new Date().getMinutes() + ":" + new Date().getSeconds() + " " + message);
+    console.log(logCounter++ + " " + new Date().getHours() + ":" + new Date().getMinutes() + ":" + new Date().getSeconds() + " " + message);
+    client.trackTrace(logCounter + " " + new Date().getHours() + ":" + new Date().getMinutes() + ":" + new Date().getSeconds() + " " + message);
 }
 
 function notifyOtherPeers(newPeer) {
