@@ -100,16 +100,13 @@ app.get('/wait', function (req, res) {
         socket.res = res;
         peers[peerId].waitSocket = socket;
         log("Peers:")
-        for (peerId in peers) {
-            log(peers[peerId].id + " " + peers[peerId].peerType)
+        for (p in peers) {
+            log(peers[p].id + " " + peers[p].peerType)
         };
         log("------------")
 
         log("Setting close event handler for " + peerId + " " + peers[peerId].peerType);
 
-        req.connection.on('close', function () {
-            log("Wait socket connection.close handler " + peerId + " " + peers[peerId].peerType);
-        });
 
         req.socket.on('close', function () {
             log("Wait socket socket.close handler " + peerId + " " + peers[peerId].peerType);
@@ -135,9 +132,7 @@ app.get('/wait', function (req, res) {
             }, 3000);
         });
 
-        req.on('end', function () {
-            log("Wait socket END handler " + peerId + " " + peers[peerId].peerType);
-        });
+      
         sendMessageToPeer(peers[peerId], null, null);
     }
 })
