@@ -103,17 +103,17 @@ app.get('/wait', function (req, res) {
         req.connection.on('close', function () {
             log("Wait socket close handler " + peerId + " " + peers[peerId].peerType);
 
-            // connectionsToClean.add(peerId);
+            connectionsToClean.add(peerId);
 
-            // setTimeout(function () {
-            //     connectionsToClean.forEach(function (peerId) {
-            //         if (peers[peerId]) {
-            //             log("About to clean connection " + peerId + " " + peers[peerId].peerType)
-            //             signOut(peerId);
-            //         }
-            //     });
-            //     connectionsToClean = new Set();
-            // }, 3000);
+            setTimeout(function () {
+                connectionsToClean.forEach(function (peerId) {
+                    if (peers[peerId]) {
+                        log("About to clean connection " + peerId + " " + peers[peerId].peerType)
+                        signOut(peerId);
+                    }
+                });
+                connectionsToClean = new Set();
+            }, 3000);
         });
 
         sendMessageToPeer(peers[peerId], null, null);
