@@ -1,6 +1,8 @@
 
-var express = require('express')
-var bodyParser = require('body-parser')
+var express = require('express');
+var bodyParser = require('body-parser');
+var http = require('http');
+var https = require('https');
 appInsights = require("applicationinsights");
 appInsights.setup().setAutoCollectExceptions(true)
 var client = appInsights.getClient();
@@ -15,6 +17,10 @@ var port = process.env.PORT || 3000;
 
 
 var app = express();
+
+var httpServer = http.createServer(app);
+
+httpServer.keepAliveTimeout=120000;
 
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.text())
@@ -183,5 +189,5 @@ function isPeerCandidate(peer, otherPeer) {
 
 client.trackTrace("Signaling server running at port " + port);
 
-app.listen(port)
+httpServer.listen(port)
 
