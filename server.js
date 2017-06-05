@@ -26,9 +26,9 @@ app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.text())
 
 
-var access = fs.createWriteStream('D:\home\site\wwwroot\api.access.log' + new Date().getMilliseconds());
+// var access = fs.createWriteStream('D:\home\site\wwwroot\api.access.log' + new Date().getMilliseconds());
 
-process.stdout.write = process.stderr.write = access.write.bind(access);
+// process.stdout.write = process.stderr.write = access.write.bind(access);
 
 process.on('uncaughtException', function (err) {
     console.error((err && err.stack) ? err.stack : err);
@@ -100,9 +100,9 @@ app.get('/wait', function (req, res) {
         socket.res = res;
         peers[peerId].waitSocket = socket;
         log("Peers:")
-        peers.forEach(function (peerId) {
-            log(peer.id + " " + peer.peerType)
-        });
+        for (peerId in peers) {
+            log(peers[peerId].id + " " + peers[peerId].peerType)
+        };
         log("------------")
 
         log("Setting close event handler for " + peerId + " " + peers[peerId].peerType);
