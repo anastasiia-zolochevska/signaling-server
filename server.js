@@ -26,9 +26,9 @@ app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.text())
 
 
-// var access = fs.createWriteStream('D:\home\site\wwwroot\api.access.log' + new Date().getMilliseconds());
+var access = fs.createWriteStream('D:\home\site\wwwroot\api.access.log' + new Date().getMilliseconds());
 
-// process.stdout.write = process.stderr.write = access.write.bind(access);
+process.stdout.write = process.stderr.write = access.write.bind(access);
 
 process.on('uncaughtException', function (err) {
     console.error((err && err.stack) ? err.stack : err);
