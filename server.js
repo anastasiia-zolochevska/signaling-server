@@ -116,6 +116,9 @@ app.get('/wait', function (req, res) {
             }, 3000);
         });
 
+        req.connection.on('end', function () {
+            log("Wait socket END handler " + peerId + " " + peers[peerId].peerType);
+        });
         sendMessageToPeer(peers[peerId], null, null);
     }
 })
