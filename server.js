@@ -100,12 +100,16 @@ app.get('/wait', function (req, res) {
         socket.res = res;
         peers[peerId].waitSocket = socket;
 
-        request.connection.on('close', function () {
+        req.connection.on('close', function () {
             log("Wait socket connection.close handler " + peerId + " " + peers[peerId].peerType);
         }); 
 
-         request.socket.on('close', function () {
+         req.socket.on('close', function () {
             log("Wait socket socket.close handler " + peerId + " " + peers[peerId].peerType);
+        }); 
+
+        req.on('finish', function () {
+            log("Wait socket req.finish handler " + peerId + " " + peers[peerId].peerType);
         }); 
 
         req.on('close', function () {
