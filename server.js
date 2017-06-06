@@ -2,7 +2,6 @@
 var express = require('express');
 var bodyParser = require('body-parser');
 var http = require('http');
-var https = require('https');
 appInsights = require("applicationinsights");
 appInsights.setup().setAutoCollectExceptions(true)
 var client = appInsights.getClient();
@@ -40,7 +39,8 @@ app.get('/sign_in', function (req, res) {
     var newPeer = {}
     newPeer.id = clientCounter++;
     newPeer.peerType = 'client';
-    newPeer.messages = [];
+    newPeer.messages = ObservableArray();
+
     newPeer.name = req.url.substring(req.url.indexOf("?") + 1, req.url.length);
     if (newPeer.name.indexOf("renderingclient_") != -1) {
         newPeer.peerType = 'client';
@@ -70,7 +70,15 @@ app.post('/message', function (req, res) {
     if (contentLength <= payload.length) {
         peers[toId].roomPeer = peers[fromId];
         peers[fromId].roomPeer = peers[toId];
+
         sendMessageToPeer(peers[toId], payload, fromId);
+        if (JSON.parse(payload).sdpMid == "video") {
+            peers[fromId].videoDataExchanged = true;
+            if (peers[toId].videoDataExchanged) {
+                delete peers[fromId];
+                delete peers[toId];
+            }
+        }
         res.set('Pragma', fromId);
         res.send("Ok");
     }
@@ -79,7 +87,7 @@ app.post('/message', function (req, res) {
 app.get('/sign_out', function (req, res) {
     log(req.url);
     var peerId = req.query.peer_id;
-    signOut(peerId);
+    delete peers[peerId];
 
     res.set('Pragma', peerId);
     res.send("Ok");
@@ -90,65 +98,14 @@ app.get('/wait', function (req, res) {
     log(req.url);
     var peerId = req.query.peer_id;
     if (peers[peerId]) {
-        log("Wait request " + peerId + " " + peers[peerId].peerType);
-        if (connectionsToClean.has(peerId)) {
-            log("This connection is still alive " + peerId + " " + peers[peerId].peerType)
-            connectionsToClean.delete(peerId)
-        }
         var socket = {};
         socket.waitPeer = peers[peerId];
         socket.res = res;
         peers[peerId].waitSocket = socket;
-        log("Peers:")
-        for (p in peers) {
-            log(peers[p].id + " " + peers[p].peerType)
-        };
-        log("------------")
 
-        log("Setting close event handler for " + peerId + " " + peers[peerId].peerType);
-
-
-        req.socket.on('close', function () {
-            log("Wait socket socket.close handler " + peerId + " " + peers[peerId].peerType);
-        });
-
-        req.on('finish', function () {
-            log("Wait socket req.finish handler " + peerId + " " + peers[peerId].peerType);
-        });
-
-        req.on('close', function () {
-            log("Wait socket close handler " + peerId + " " + peers[peerId].peerType);
-
-            connectionsToClean.add(peerId);
-
-            setTimeout(function () {
-                connectionsToClean.forEach(function (peerId) {
-                    if (peers[peerId]) {
-                        log("About to clean connection " + peerId + " " + peers[peerId].peerType)
-                        signOut(peerId);
-                    }
-                });
-                connectionsToClean = new Set();
-            }, 3000);
-        });
-
-      
         sendMessageToPeer(peers[peerId], null, null);
     }
 })
-
-function signOut(peerId) {
-    var peer = peers[peerId];
-
-    if (peer && peer.roomPeer) {
-        log("Sending BYE to " + peer.roomPeer.id + " " + peers[peer.roomPeer.id].peerType)
-        peer.roomPeer.waitSocket.res.set('Pragma', peerId);
-        peer.roomPeer.waitSocket.res.send("BYE");
-        peer.roomPeer.roomPeer = null;
-        peer.roomPeer = null;
-    }
-    delete peers[peerId];
-}
 
 
 function formatListOfPeers(peer) {
@@ -190,7 +147,6 @@ function sendMessageToPeer(peer, payload, fromId) {
         if (msg) {
             peer.waitSocket.res.set('Pragma', msg.id);
             peer.waitSocket.res.send(msg.payload);
-            console.log("Sending", msg.payload);
             peer.waitSocket.waitPeer = null;
             peer.waitSocket.tmpData = "";
             peer.waitSocket = null;
@@ -200,7 +156,6 @@ function sendMessageToPeer(peer, payload, fromId) {
 
 function isPeerCandidate(peer, otherPeer) {
     return (otherPeer.id != peer.id && // filter self
-        !otherPeer.roomPeer && // filter peers in 'rooms'
         otherPeer.peerType != peer.peerType) // filter out peers of same type
 }
 
