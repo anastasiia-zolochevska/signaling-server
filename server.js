@@ -97,6 +97,11 @@ app.get('/sign_out', function (req, res) {
 app.get('/wait', function (req, res) {
     log(req.url);
     var peerId = req.query.peer_id;
+
+     if (connectionsToClean.has(peerId)) {
+            connectionsToClean.delete(peerId)
+        }
+
     if (peers[peerId]) {
         var socket = {};
         socket.waitPeer = peers[peerId];
@@ -105,6 +110,19 @@ app.get('/wait', function (req, res) {
 
         sendMessageToPeer(peers[peerId], null, null);
     }
+
+     req.on('close', function () {
+            connectionsToClean.add(peerId);
+            setTimeout(function () {
+                connectionsToClean.forEach(function (peerId) {
+                    if (peers[peerId]) {
+                        delete peers[peerId];
+                    }
+                });
+                connectionsToClean = new Set();
+            }, 3000);
+        });
+
 })
 
 
