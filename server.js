@@ -100,6 +100,10 @@ app.post('/message', function (req, res) {
     }
 })
 
+app.post('/heartbeat', function (req, res) {
+    res.sendStatus(200);
+})
+
 app.get('/sign_out', function (req, res) {
     log(req.url);
     var peerId = req.query.peer_id;
