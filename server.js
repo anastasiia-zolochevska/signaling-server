@@ -14,6 +14,7 @@ var connectionsToClean = new Set();
 
 var port = process.env.PORT || 3000;
 
+var intervalToCleanConnections = 10000;
 
 var app = express();
 
@@ -30,8 +31,29 @@ var access = fs.createWriteStream('D:\home\site\wwwroot\api.access.log' + new Da
 process.stdout.write = process.stderr.write = access.write.bind(access);
 
 process.on('uncaughtException', function (err) {
-    console.error((err && err.stack) ? err.stack : err);
+    log((err && err.stack) ? err.stack : err);
 });
+
+app.all('*', function (req, res, next) {
+    log(req.url);
+    if (req.query.peer_id && peers[req.query.peer_id]) {
+        peers[req.query.peer_id].lastSeenActive = (new Date()).getTime();
+    }
+    next();
+});
+
+function cleanPeerList() {
+    for (peerId in peers) {
+        log(peers[peerId].lastSeenActive);
+        if (peers[peerId].lastSeenActive + intervalToCleanConnections < new Date()) {
+            log("Deleting peer " + peerId);
+            delete peers[peerId];
+        }
+    }
+}
+
+setInterval(cleanPeerList, intervalToCleanConnections);
+
 
 app.get('/sign_in', function (req, res) {
     var client = {};
@@ -41,20 +63,20 @@ app.get('/sign_in', function (req, res) {
     newPeer.peerType = 'client';
     newPeer.messages = [];
 
-    newPeer.name = req.url.substring(req.url.indexOf("?") + 1, req.url.length);
+    newPeer.name = req.query.peer_name;
     if (newPeer.name.indexOf("renderingclient_") != -1) {
         newPeer.peerType = 'client';
     }
     if (newPeer.name.indexOf("renderingserver_") != -1) {
         newPeer.peerType = 'server';
     }
+    newPeer.timestampOfLastHeartbeat = (new Date()).getTime();
     peers[newPeer.id] = newPeer;
 
     res.set('Pragma', newPeer.id);
     res.send(formatListOfPeers(newPeer));
     notifyOtherPeers(newPeer);
 })
-
 
 
 app.post('/message', function (req, res) {
@@ -72,13 +94,7 @@ app.post('/message', function (req, res) {
         peers[fromId].roomPeer = peers[toId];
 
         sendMessageToPeer(peers[toId], payload, fromId);
-        if (JSON.parse(payload).sdpMid == "video") {
-            peers[fromId].videoDataExchanged = true;
-            if (peers[toId].videoDataExchanged) {
-                delete peers[fromId];
-                delete peers[toId];
-            }
-        }
+
         res.set('Pragma', fromId);
         res.send("Ok");
     }
@@ -87,6 +103,14 @@ app.post('/message', function (req, res) {
 app.get('/sign_out', function (req, res) {
     log(req.url);
     var peerId = req.query.peer_id;
+
+    var peer = peers[peerId];
+
+    if (peer.roomPeer) {
+        peer.roomPeer.roomPeer = null;
+        peer.roomPeer = null;
+    }
+
     delete peers[peerId];
 
     res.set('Pragma', peerId);
@@ -98,9 +122,9 @@ app.get('/wait', function (req, res) {
     log(req.url);
     var peerId = req.query.peer_id;
 
-     if (connectionsToClean.has(peerId)) {
-            connectionsToClean.delete(peerId)
-        }
+    if (connectionsToClean.has(peerId)) {
+        connectionsToClean.delete(peerId)
+    }
 
     if (peers[peerId]) {
         var socket = {};
@@ -111,17 +135,17 @@ app.get('/wait', function (req, res) {
         sendMessageToPeer(peers[peerId], null, null);
     }
 
-     req.on('close', function () {
-            connectionsToClean.add(peerId);
-            setTimeout(function () {
-                connectionsToClean.forEach(function (peerId) {
-                    if (peers[peerId]) {
-                        delete peers[peerId];
-                    }
-                });
-                connectionsToClean = new Set();
-            }, 3000);
-        });
+    req.on('close', function () {
+        connectionsToClean.add(peerId);
+        setTimeout(function () {
+            connectionsToClean.forEach(function (peerId) {
+                if (peers[peerId]) {
+                    delete peers[peerId];
+                }
+            });
+            connectionsToClean = new Set();
+        }, 3000);
+    });
 
 })
 
@@ -174,6 +198,7 @@ function sendMessageToPeer(peer, payload, fromId) {
 
 function isPeerCandidate(peer, otherPeer) {
     return (otherPeer.id != peer.id && // filter self
+        !otherPeer.roomPeer && // filter peers in 'rooms'
         otherPeer.peerType != peer.peerType) // filter out peers of same type
 }
 
