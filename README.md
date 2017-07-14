@@ -1,6 +1,6 @@
 # Signaling server
 
-Http/https [signaling server](https://www.html5rocks.com/en/tutorials/webrtc/infrastructure/) for [WebRTC](https://webrtc.org/) 
+Http/https [signaling server](https://www.html5rocks.com/en/tutorials/webrtc/infrastructure/) for [WebRTC](https://webrtc.org/)  communication
 
 ## Run locally
 Simply run
