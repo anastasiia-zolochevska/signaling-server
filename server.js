@@ -44,9 +44,13 @@ app.all('*', function (req, res, next) {
 
 function cleanPeerList() {
     for (peerId in peers) {
-        log(peers[peerId].lastSeenActive);
-        if (peers[peerId].lastSeenActive + intervalToCleanConnections < new Date()) {
+        var peer = peers[peerId]
+        if (peer.lastSeenActive + intervalToCleanConnections < new Date()) {
             log("Deleting peer " + peerId);
+
+            if (peer.roomPeer) {
+                peer.roomPeer.roomPeer = null;
+            }
             delete peers[peerId];
         }
     }
@@ -112,7 +116,6 @@ app.get('/sign_out', function (req, res) {
 
     if (peer.roomPeer) {
         peer.roomPeer.roomPeer = null;
-        peer.roomPeer = null;
     }
 
     delete peers[peerId];
