@@ -2,10 +2,9 @@
 var express = require('express');
 var bodyParser = require('body-parser');
 var http = require('http');
+process.env.APPINSIGHTS_INSTRUMENTATIONKEY = process.env.APPINSIGHTS_INSTRUMENTATIONKEY || "NO_APPLICATION_INSIGHTS";
 appInsights = require("applicationinsights");
 appInsights.setup().setAutoCollectExceptions(true)
-var client = appInsights.getClient();
-const fs = require('fs');
 
 var clientCounter = 1;
 var clientToId = {};
@@ -14,7 +13,21 @@ var connectionsToClean = new Set();
 
 var port = process.env.PORT || 3000;
 
-var intervalToCleanConnections = 10000;
+
+var intervalToCleanConnections = process.env.INTERVAL || 10000;
+
+
+if (process.env.ENABLE_LOGGING_TO_FILE){
+    const fs = require('fs')
+    var logLocation = process.env.LOGGING_FILE_LOCATION || 'D:\home\site\wwwroot\api.access.log'
+    var access = fs.createWriteStream(logLocation + new Date().getMilliseconds());
+
+    process.stdout.write = process.stderr.write = access.write.bind(access);
+
+    process.on('uncaughtException', function (err) {
+        log((err && err.stack) ? err.stack : err);
+    });
+}
 
 var app = express();
 
@@ -25,14 +38,6 @@ httpServer.keepAliveTimeout = 120000;
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.text())
 
-
-var access = fs.createWriteStream('D:\home\site\wwwroot\api.access.log' + new Date().getMilliseconds());
-
-process.stdout.write = process.stderr.write = access.write.bind(access);
-
-process.on('uncaughtException', function (err) {
-    log((err && err.stack) ? err.stack : err);
-});
 
 app.all('*', function (req, res, next) {
     log(req.url);
@@ -177,7 +182,7 @@ function formatListOfPeers(peer) {
 var logCounter = 0;
 function log(message) {
     console.log(logCounter++ + " " + new Date().getHours() + ":" + new Date().getMinutes() + ":" + new Date().getSeconds() + " " + message);
-    client.trackTrace(logCounter + " " + new Date().getHours() + ":" + new Date().getMinutes() + ":" + new Date().getSeconds() + " " + message);
+    appInsights.getClient().trackTrace(logCounter + " " + new Date().getHours() + ":" + new Date().getMinutes() + ":" + new Date().getSeconds() + " " + message);
 }
 
 function notifyOtherPeers(newPeer) {
@@ -215,7 +220,7 @@ function isPeerCandidate(peer, otherPeer) {
         otherPeer.peerType != peer.peerType) // filter out peers of same type
 }
 
-client.trackTrace("Signaling server running at port " + port);
+log("Signaling server running at port " + port);
 
 httpServer.listen(port)
 
