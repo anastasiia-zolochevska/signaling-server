@@ -154,7 +154,7 @@ app.get('/wait', function (req, res) {
             connectionsToClean.forEach(function (peerId) {
                 if (peers[peerId]) {
                     if (peers[peerId].roomPeer) {
-                        log("Peer " + peerId + " crashed. Making " + peer.roomPeer.id + " available")
+                        log("Peer " + peerId + " crashed. Making " + peers[peerId].roomPeer.id + " available")
                         peers[peerId].roomPeer.roomPeer = null;
                     }
                     log("Connection close. Deleteting peer " + peerId);
