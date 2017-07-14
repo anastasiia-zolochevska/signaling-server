@@ -100,7 +100,7 @@ app.post('/message', function (req, res) {
     }
 })
 
-app.post('/heartbeat', function (req, res) {
+app.get('/heartbeat', function (req, res) {
     res.sendStatus(200);
 })
 
