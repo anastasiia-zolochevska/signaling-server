@@ -20,7 +20,7 @@
         ],
         "parameters": [
           {
-            "name": "",
+            "name": "peer_name",
             "required": true,
             "in": "query",
             "description": "the client identifier, should start with either renderingserver_ or renderingclient_",
@@ -93,6 +93,26 @@
                 "$ref": "#/definitions/ConnectedClient"
               }
             }
+          }
+        }
+      }
+    },
+    "/heartbeat": {
+      "get": {
+        "summary": "client tracking endpoint, determines presence for clients",
+        "description": "A client should issue a request to this endpoint at an interval of 5s to indicate it is still alive.",
+        "parameters": [
+          {
+            "name": "peer_id",
+            "required": true,
+            "in": "query",
+            "description": "the client that is sending the message",
+            "type": "number"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "acknowledgement"
           }
         }
       }
