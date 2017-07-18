@@ -14,7 +14,9 @@ By default server will run on port 3000. Set environment variable PORT to change
 ## Deploy to Azure
 Azure Web Apps provides a highly scalable, self-patching web hosting service. [This quickstart](https://docs.microsoft.com/en-us/azure/app-service-web/app-service-web-get-started-nodejs) shows how to deploy a Node.js app to Azure Web Apps.
 
-Set environmant variable (application setting) WEBSITE_NODE_DEFAULT_VERSION to "8.0.0"
+Set environmant variable (application setting) WEBSITE_NODE_DEFAULT_VERSION to "8.0.0".
+
+Specify the origins that should be allowed to make cross-origin calls in CORS section (needed for web clients).
 
 ## Logging
 If environment variable APPINSIGHTS_INSTRUMENTATIONKEY is set, logs are available in [Application Insights](https://docs.microsoft.com/en-us/azure/application-insights/app-insights-nodejs).
