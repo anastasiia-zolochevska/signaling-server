@@ -16,7 +16,7 @@ Azure Web Apps provides a highly scalable, self-patching web hosting service. [T
 
 Set environmant variable (application setting) WEBSITE_NODE_DEFAULT_VERSION to "8.0.0".
 
-Specify the origins that should be allowed to make cross-origin calls in CORS section (needed for web clients). Set it to "\*" to allow all requests.
+Specify the origins that should be allowed to make cross-origin calls in CORS section (needed for web clients). Set it to "\*" to allow requests from all origins.
 
 ## Logging
 If environment variable APPINSIGHTS_INSTRUMENTATIONKEY is set, logs are available in [Application Insights](https://docs.microsoft.com/en-us/azure/application-insights/app-insights-nodejs).
