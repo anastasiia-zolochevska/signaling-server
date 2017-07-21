@@ -29,8 +29,21 @@ if (process.env.ENABLE_LOGGING_TO_FILE){
     });
 }
 
-var app = express();
+var intervalToCleanConnections = process.env.INTERVAL || 10000;
 
+if (process.env.ENABLE_LOGGING_TO_FILE){
+    const fs = require('fs')
+    var logLocation = process.env.LOGGING_FILE_LOCATION || 'D:\home\site\wwwroot\api.access.log'
+    var access = fs.createWriteStream(logLocation + new Date().getMilliseconds());
+
+    process.stdout.write = process.stderr.write = access.write.bind(access);
+
+    process.on('uncaughtException', function (err) {
+        log((err && err.stack) ? err.stack : err);
+    });
+}
+
+var app = express();
 var httpServer = http.createServer(app);
 
 httpServer.keepAliveTimeout = 120000;
@@ -66,6 +79,32 @@ function cleanPeerList() {
 }
 
 setInterval(cleanPeerList, intervalToCleanConnections);
+
+app.all('*', function (req, res, next) {
+    log(req.url);
+    if (req.query.peer_id && peers[req.query.peer_id]) {
+        peers[req.query.peer_id].lastSeenActive = (new Date()).getTime();
+    }
+    next();
+});
+
+function cleanPeerList() {
+    for (peerId in peers) {
+        var peer = peers[peerId]
+        if (peer.lastSeenActive + intervalToCleanConnections < new Date()) {
+            log("Deleting peer " + peerId);
+            if (peer.roomPeer) {
+                log("Peer " + peerId + " crashed. Making " + peer.roomPeer.id + " available")
+                peer.roomPeer.roomPeer = null;
+            }
+            delete peers[peerId];
+            delete peers[peerId];
+        }
+    }
+}
+
+setInterval(cleanPeerList, intervalToCleanConnections);
+
 
 app.get('/sign_in', function (req, res) {
     var client = {};
@@ -222,4 +261,3 @@ function isPeerCandidate(peer, otherPeer) {
 log("Signaling server running at port " + port);
 
 httpServer.listen(port)
-
