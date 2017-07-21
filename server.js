@@ -1,21 +1,71 @@
 
-var express = require('express')
-var bodyParser = require('body-parser')
+var express = require('express');
+var bodyParser = require('body-parser');
+var helmet = require('helmet');
+var cors = require('cors');
+var http = require('http');
+process.env.APPINSIGHTS_INSTRUMENTATIONKEY = process.env.APPINSIGHTS_INSTRUMENTATIONKEY || "NO_APPLICATION_INSIGHTS";
 appInsights = require("applicationinsights");
-var client = appInsights.getClient();
+appInsights.setup().setAutoCollectExceptions(true)
 
 var clientCounter = 1;
 var clientToId = {};
 var peers = {};
+var connectionsToClean = new Set();
 
 var port = process.env.PORT || 3000;
+var allowedOrigins = (process.env.CORS_ORIGINS || '*').split(',')
+var intervalToCleanConnections = process.env.INTERVAL || 10000;
 
+if (process.env.ENABLE_LOGGING_TO_FILE){
+    const fs = require('fs')
+    var logLocation = process.env.LOGGING_FILE_LOCATION || 'D:\home\site\wwwroot\api.access.log'
+    var access = fs.createWriteStream(logLocation + new Date().getMilliseconds());
+
+    process.stdout.write = process.stderr.write = access.write.bind(access);
+
+    process.on('uncaughtException', function (err) {
+        log((err && err.stack) ? err.stack : err);
+    });
+}
 
 var app = express();
 
+var httpServer = http.createServer(app);
+
+httpServer.keepAliveTimeout = 120000;
+
+app.use(helmet())
+app.use(cors({
+    origin: (origin, cb) => cb(null, allowedOrigins.indexOf('*') !== -1 || allowedOrigins.indexOf(origin) !== -1)
+}))
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.text())
 
+app.all('*', function (req, res, next) {
+    log(req.url);
+    if (req.query.peer_id && peers[req.query.peer_id]) {
+        peers[req.query.peer_id].lastSeenActive = (new Date()).getTime();
+    }
+    next();
+});
+
+function cleanPeerList() {
+    for (peerId in peers) {
+        var peer = peers[peerId]
+        if (peer.lastSeenActive + intervalToCleanConnections < new Date()) {
+            log("Deleting peer " + peerId);
+            if (peer.roomPeer) {
+                log("Peer " + peerId + " crashed. Making " + peer.roomPeer.id + " available")
+                peer.roomPeer.roomPeer = null;
+            }
+            delete peers[peerId];
+            delete peers[peerId];
+        }
+    }
+}
+
+setInterval(cleanPeerList, intervalToCleanConnections);
 
 app.get('/sign_in', function (req, res) {
     var client = {};
@@ -24,21 +74,21 @@ app.get('/sign_in', function (req, res) {
     newPeer.id = clientCounter++;
     newPeer.peerType = 'client';
     newPeer.messages = [];
-    newPeer.name = req.url.substring(req.url.indexOf("?") + 1, req.url.length);
+
+    newPeer.name = req.query.peer_name;
     if (newPeer.name.indexOf("renderingclient_") != -1) {
         newPeer.peerType = 'client';
     }
     if (newPeer.name.indexOf("renderingserver_") != -1) {
         newPeer.peerType = 'server';
     }
+    newPeer.timestampOfLastHeartbeat = (new Date()).getTime();
     peers[newPeer.id] = newPeer;
 
     res.set('Pragma', newPeer.id);
     res.send(formatListOfPeers(newPeer));
     notifyOtherPeers(newPeer);
 })
-
-
 
 app.post('/message', function (req, res) {
     log(req.url);
@@ -53,72 +103,69 @@ app.post('/message', function (req, res) {
     if (contentLength <= payload.length) {
         peers[toId].roomPeer = peers[fromId];
         peers[fromId].roomPeer = peers[toId];
+
         sendMessageToPeer(peers[toId], payload, fromId);
+
         res.set('Pragma', fromId);
         res.send("Ok");
     }
+})
 
+app.get('/heartbeat', function (req, res) {
+    res.sendStatus(200);
 })
 
 app.get('/sign_out', function (req, res) {
     log(req.url);
     var peerId = req.query.peer_id;
-    signOut(peerId);
+
+    var peer = peers[peerId];
+
+    if (peer.roomPeer) {
+        peer.roomPeer.roomPeer = null;
+    }
+
+    delete peers[peerId];
 
     res.set('Pragma', peerId);
     res.send("Ok");
 })
 
-
-var connectionsToClean = new Set();
-
 app.get('/wait', function (req, res) {
     log(req.url);
     var peerId = req.query.peer_id;
+
     if (connectionsToClean.has(peerId)) {
         connectionsToClean.delete(peerId)
     }
-    var socket = {};
-    socket.waitPeer = peers[peerId];
-    socket.res = res;
-    peers[peerId].waitSocket = socket;
 
-    req.connection.on('close', function () {
-        log("Wait socket close handler " + peerId);
-        var clearConnection = true;
-        for (var key in peers) {
-            if (!(peers[key]).waitSocket) {
-                clearConnection = false;
-            }
-        }
-        if (clearConnection) {
-            log("CRASH " + peerId);
-            connectionsToClean.add(peerId);
-        }
+    if (peers[peerId]) {
+        var socket = {};
+        socket.waitPeer = peers[peerId];
+        socket.res = res;
+        peers[peerId].waitSocket = socket;
+
+        sendMessageToPeer(peers[peerId], null, null);
+    }
+
+    req.on('close', function () {
+        connectionsToClean.add(peerId);
         setTimeout(function () {
             connectionsToClean.forEach(function (peerId) {
-                signOut(peerId);
-                log("Cleaning connections " + peerId)
+                if (peers[peerId]) {
+                    if (peers[peerId].roomPeer) {
+                        log("Peer " + peerId + " crashed. Making " + peers[peerId].roomPeer.id + " available")
+                        peers[peerId].roomPeer.roomPeer = null;
+                    }
+                    log("Connection close. Deleteting peer " + peerId);
+                    delete peers[peerId];
+                }
             });
             connectionsToClean = new Set();
         }, 3000);
     });
 
-    sendMessageToPeer(peers[peerId], null, null);
 })
-
-function signOut(peerId) {
-    var peer = peers[peerId];
-
-    if (peer && peer.roomPeer) {
-        peer.roomPeer.waitSocket.res.set('Pragma', peerId);
-        peer.roomPeer.waitSocket.res.send("BYE");
-        peer.roomPeer.roomPeer = null;
-        peer.roomPeer = null;
-    }
-    delete peers[peerId];
-}
-
 
 function formatListOfPeers(peer) {
     var result = peer.name + "," + peer.id + ",1\n";
@@ -131,9 +178,10 @@ function formatListOfPeers(peer) {
     return result;
 }
 
+var logCounter = 0;
 function log(message) {
-    console.log(message);
-    client.trackTrace(message);
+    console.log(logCounter++ + " " + new Date().getHours() + ":" + new Date().getMinutes() + ":" + new Date().getSeconds() + " " + message);
+    appInsights.getClient().trackTrace(logCounter + " " + new Date().getHours() + ":" + new Date().getMinutes() + ":" + new Date().getSeconds() + " " + message);
 }
 
 function notifyOtherPeers(newPeer) {
@@ -158,7 +206,6 @@ function sendMessageToPeer(peer, payload, fromId) {
         if (msg) {
             peer.waitSocket.res.set('Pragma', msg.id);
             peer.waitSocket.res.send(msg.payload);
-            console.log("Sending", msg.payload);
             peer.waitSocket.waitPeer = null;
             peer.waitSocket.tmpData = "";
             peer.waitSocket = null;
@@ -172,7 +219,7 @@ function isPeerCandidate(peer, otherPeer) {
         otherPeer.peerType != peer.peerType) // filter out peers of same type
 }
 
-client.trackTrace("Signaling server running at port " + port);
+log("Signaling server running at port " + port);
 
-app.listen(port)
+httpServer.listen(port)
 

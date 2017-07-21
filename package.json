@@ -1,6 +1,6 @@
 {
   "name": "signaling-server",
-  "version": "0.0.1",
+  "version": "0.1.1",
   "scripts": {
     "start": "node server.js"
   },
@@ -8,6 +8,11 @@
   "dependencies": {
     "applicationinsights": "^0.20.1",
     "body-parser": "^1.17.2",
-    "express": "^4.15.3"
+    "cors": "^2.8.4",
+    "express": "^4.15.3",
+    "helmet": "^3.7.0"
+  },
+  "engines": {
+    "node": "^8.2.1"
   }
 }
