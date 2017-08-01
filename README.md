@@ -28,3 +28,8 @@ If environment variable APPINSIGHTS_INSTRUMENTATIONKEY is set, logs are availabl
 
 ## Authentication
 Authentication with [Azure Active Directory B2C](https://docs.microsoft.com/en-us/azure/active-directory-b2c/active-directory-b2c-overview) is comming soon.
+
+## Custom HTTPS certificates
+
+You can configure this server to use a custom SSL certificate at the platform level (azure, heroku, aws, etc) - to learn how to do so on azure,
+see [this page](https://docs.microsoft.com/en-us/azure/app-service-web/web-sites-purchase-ssl-web-site).
