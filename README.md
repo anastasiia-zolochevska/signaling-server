@@ -1,5 +1,7 @@
 # Signaling server
 
+[![Deploy to Azure](http://azuredeploy.net/deploybutton.png)](https://azuredeploy.net/)
+
 Http/https [signaling server](https://www.html5rocks.com/en/tutorials/webrtc/infrastructure/) for [WebRTC](https://webrtc.org/)  communication
 
 ## Run locally
@@ -9,16 +11,19 @@ npm install
 node .\server.js
 ```
 
-By default server will run on port 3000. Set environment variable PORT to change it.
+By default server will run on port `3000` locally. Set environment variable `PORT` to change it.
 
 ## Deploy to Azure
-Azure Web Apps provides a highly scalable, self-patching web hosting service. [This quickstart](https://docs.microsoft.com/en-us/azure/app-service-web/app-service-web-get-started-nodejs) shows how to deploy a Node.js app to Azure Web Apps.
 
-Set environmant variable (application setting) WEBSITE_NODE_DEFAULT_VERSION to "8.0.0".
+Simply click the big button above :smile:
 
-Specify the origins that should be allowed to make cross-origin calls in CORS section (needed for web clients). Set it to "\*" to allow requests from all origins.
+> Note: This application ships with CORS wide open (`*`, set below). Anytime `CORS_ORIGINS` contains `*` as a value, or if
+it contains no values, any caller will be able to access your service. 
+
+You can set the origins that should be allowed to make cross-origin calls to your service by adding comma seperated values to the `CORS_ORIGINS` environment variable.
 
 ## Logging
+
 If environment variable APPINSIGHTS_INSTRUMENTATIONKEY is set, logs are available in [Application Insights](https://docs.microsoft.com/en-us/azure/application-insights/app-insights-nodejs).
 
 ## Authentication
