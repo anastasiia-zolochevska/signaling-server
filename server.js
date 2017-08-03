@@ -29,20 +29,6 @@ if (process.env.ENABLE_LOGGING_TO_FILE){
     });
 }
 
-var intervalToCleanConnections = process.env.INTERVAL || 10000;
-
-if (process.env.ENABLE_LOGGING_TO_FILE){
-    const fs = require('fs')
-    var logLocation = process.env.LOGGING_FILE_LOCATION || 'D:\home\site\wwwroot\api.access.log'
-    var access = fs.createWriteStream(logLocation + new Date().getMilliseconds());
-
-    process.stdout.write = process.stderr.write = access.write.bind(access);
-
-    process.on('uncaughtException', function (err) {
-        log((err && err.stack) ? err.stack : err);
-    });
-}
-
 var app = express();
 var httpServer = http.createServer(app);
 
